@@ -31,24 +31,9 @@ class ProgressManager:
         sys.stdout.write(f"\x1B[{progress_start};1H\x1B[0J")
 
         lines = [
-            self.draw_progress_bar(
-                "Depth:   ",
-                progress.total_depth - progress.current_depth,
-                progress.total_depth,
-                '█'
-            ),
-            self.draw_progress_bar(
-                "Breadth: ",
-                progress.total_breadth - progress.current_breadth,
-                progress.total_breadth,
-                '█'
-            ),
-            self.draw_progress_bar(
-                "Queries: ",
-                progress.completed_queries,
-                progress.total_queries,
-                '█'
-            ),
+            self.draw_progress_bar("Depth:   ", progress.total_depth - progress.current_depth, progress.total_depth, '█'),
+            self.draw_progress_bar("Breadth: ", progress.total_breadth - progress.current_breadth, progress.total_breadth, '█'),
+            self.draw_progress_bar("Queries: ", progress.completed_queries, progress.total_queries, '█'),
         ]
 
         if getattr(progress, 'current_query', None):

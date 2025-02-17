@@ -7,7 +7,10 @@ from typing import List
 class FeedbackSchema(BaseModel):
     questions: List[str]
 
-async def generate_feedback(query: str, num_questions: int = 3):
+async def generate_feedback(query: str, num_questions: int = 3) -> List[str]:
+    """
+    Generate follow-up questions to clarify the research direction based on the user's query.
+    """
     prompt_text = (
         f"Given the following query from the user, ask some follow up questions to clarify the research direction. "
         f"Return a maximum of {num_questions} questions, but feel free to return less if the original query is clear: "
@@ -21,5 +24,4 @@ async def generate_feedback(query: str, num_questions: int = 3):
         schema=FeedbackSchema
     )
 
-    # Access questions as an attribute from the validated Pydantic model.
     return result["object"].questions[:num_questions]

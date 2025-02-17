@@ -70,7 +70,6 @@ async def process_serp_result(
     num_learnings: int = 3,
     num_follow_up_questions: int = 3
 ) -> Any:
-    # Extract and trim markdown content from each SERP result.
     contents = [
         trim_prompt(item.get("markdown", ""), 25000)
         for item in result.get("data", [])
@@ -153,11 +152,12 @@ async def deep_research(
                 all_urls = visited_urls + new_urls
                 new_depth = depth - 1
                 if new_depth > 0:
+                    log(f"Researching deeper, breadth: {breadth // 2}, depth: {new_depth}")
                     report_progress({
                         "current_depth": new_depth,
                         "current_breadth": breadth // 2,
                         "completed_queries": progress.completed_queries + 1,
-                        "current_query": serpQuery.query
+                        "current_query": serpQuery.query,
                     })
                     next_query = (
                         f"Previous research goal: {serpQuery.researchGoal}\n"
@@ -169,13 +169,13 @@ async def deep_research(
                         depth=new_depth,
                         learnings=all_learnings,
                         visited_urls=all_urls,
-                        on_progress=on_progress
+                        on_progress=on_progress,
                     )
                 else:
                     report_progress({
                         "current_depth": 0,
                         "completed_queries": progress.completed_queries + 1,
-                        "current_query": serpQuery.query
+                        "current_query": serpQuery.query,
                     })
                     return {"learnings": all_learnings, "visited_urls": all_urls}
             except Exception as e:

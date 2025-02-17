@@ -2,9 +2,9 @@
   - [x] Confirm all env variables used in TS (OPENAI_KEY, FIRECRAWL_KEY, OPENAI_ENDPOINT, OPENAI_MODEL, CONTEXT_SIZE) are mirrored in Python.
   - [x] Verify fallback values and ensure .env/.env.local loading logic matches TS defaults.
 
-- [ ] **API Model Configuration Parity**
-  - [ ] Ensure Python’s OpenAI model call includes any additional parameters (e.g., reasoningEffort, structuredOutputs) if needed.
-  - [ ] Compare model configuration between TS and Python versions for consistency.
+- [x] **API Model Configuration Parity**
+  - [x] Ensure Python’s OpenAI model call includes any additional parameters (e.g., reasoningEffort, structuredOutputs) if needed.
+  - [x] Compare model configuration between TS and Python versions for consistency.
 
 - [ ] **JSON Parsing and Validation**
   - [ ] Map all TS zod schemas to equivalent Pydantic models.
