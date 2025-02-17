@@ -6,3 +6,5 @@ nest_asyncio
 requests
 pydantic
 python-dotenv
+langchain
+pytest-asyncio

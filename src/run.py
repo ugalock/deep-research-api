@@ -49,8 +49,10 @@ async def run():
         depth=depth,
         on_progress=output.update_progress
     )
+
+    # Corrected key to match the internal dictionary structure
     learnings = result.get("learnings", [])
-    visited_urls = result.get("visitedUrls", [])
+    visited_urls = result.get("visited_urls", [])
 
     log(f"\n\nLearnings:\n\n{chr(10).join(learnings)}")
     log(f"\n\nVisited URLs ({len(visited_urls)}):\n\n{chr(10).join(visited_urls)}")

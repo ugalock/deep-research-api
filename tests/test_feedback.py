@@ -1,15 +1,15 @@
 import pytest
-import asyncio
+from unittest.mock import patch
 from feedback import generate_feedback
 
 @pytest.mark.asyncio
-async def test_generate_feedback():
-    query = "What is AI?"
-    try:
-        questions = await generate_feedback(query, num_questions=3)
-        assert isinstance(questions, list)
-        assert len(questions) <= 3
-        for q in questions:
-            assert isinstance(q, str)
-    except Exception as e:
-        pytest.skip("OpenAI API not configured: " + str(e))
+@patch("ai.generate_object")
+async def test_generate_feedback(mock_generate_object):
+    mock_generate_object.return_value = {
+        "object": {"questions": ["What is the timeframe?", "Any specific region?"]},
+        "raw": {}
+    }
+    questions = await generate_feedback("Research climate change effects on coral reefs")
+    assert len(questions) == 2
+    assert "What is the timeframe?" in questions
+    mock_generate_object.assert_called_once()

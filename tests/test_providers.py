@@ -1,30 +1,34 @@
 import pytest
-from ai.providers import firecrawl_search, trim_prompt, o3MiniModel
-import tiktoken
+from unittest.mock import patch, MagicMock
+from ai.providers import firecrawl_search, trim_prompt, get_o3_mini_model
+import asyncio
 
-def test_trim_prompt_short():
-    text = "Short text"
-    trimmed = trim_prompt(text, context_size=1000)
-    assert trimmed == text
+@patch("ai.providers.firecrawl_app.search")
+def test_firecrawl_search(mock_search):
+    mock_search.return_value = {"data": [{"url": "http://example.com", "markdown": "some content"}]}
+    result = firecrawl_search("test query", timeout=15000, limit=5)
+    assert "data" in result
+    assert len(result["data"]) == 1
+    assert result["data"][0]["url"] == "http://example.com"
+    mock_search.assert_called_once()
 
-def test_trim_prompt_long():
-    # Create a long text by repeating a pattern
-    text = "A" * 5000
+def test_trim_prompt_no_trim():
+    long_text = "Short text"
+    trimmed = trim_prompt(long_text, context_size=1000)
+    assert trimmed == long_text
+
+def test_trim_prompt_with_trim():
+    text = "A" * 200000
     trimmed = trim_prompt(text, context_size=1000)
     assert len(trimmed) < len(text)
+    assert len(trimmed) >= 140
 
-def test_firecrawl_search_returns_dict():
-    # This test assumes firecrawl_search returns a dictionary.
-    try:
-        result = firecrawl_search("test query")
-        assert isinstance(result, dict)
-    except Exception as e:
-        pytest.skip("Firecrawl API not configured: " + str(e))
-
-def test_o3mini_model_call():
-    # Test that the model call returns a response with 'choices'
-    try:
-        response = o3MiniModel("Test prompt", timeout=5)
-        assert "choices" in response
-    except Exception as e:
-        pytest.skip("OpenAI API not configured: " + str(e))
+@pytest.mark.asyncio
+@patch("openai.ChatCompletion.acreate")
+async def test_get_o3_mini_model(mock_acreate):
+    # Mock the async create call
+    mock_acreate.return_value = {"text": '{"test":"ok"}'}
+    model_fn = get_o3_mini_model()
+    resp = await model_fn("prompt here")
+    mock_acreate.assert_called_once()
+    assert resp["text"] == '{"test":"ok"}'

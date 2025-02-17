@@ -2,11 +2,11 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-import openai
+from openai import AsyncOpenAI
 import tiktoken
 from firecrawl import FirecrawlApp
-from text_splitter import RecursiveCharacterTextSplitter
-from typing import Any, Dict, Optional, Callable
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from typing import Any, Dict, Optional, Callable, Awaitable
 
 # Environment Variables
 OPENAI_KEY: str = os.getenv("OPENAI_KEY", "")
@@ -22,8 +22,7 @@ if not FIRECRAWL_KEY:
     print("Warning: FIRECRAWL_KEY is not set. Please ensure it is defined in your .env file.")
 
 # Configure OpenAI
-openai.api_key = OPENAI_KEY
-openai.api_base = OPENAI_ENDPOINT
+client = AsyncOpenAI(api_key=OPENAI_KEY, base_url=OPENAI_ENDPOINT)
 
 # Initialize Firecrawl client
 firecrawl_app = FirecrawlApp(api_key=FIRECRAWL_KEY, api_url=FIRECRAWL_BASE_URL)
@@ -52,7 +51,7 @@ def trim_prompt(prompt: str, context_size: int = CONTEXT_SIZE) -> str:
         return trim_prompt(prompt[:chunk_size], context_size)
     return trim_prompt(trimmed, context_size)
 
-def firecrawl_search(query: str, timeout: int = 15000, limit: int = 5, 
+def firecrawl_search(query: str, timeout: int = 15000, limit: int = 5,
                       scrape_options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Search via Firecrawl using default scrape options (markdown)."""
     if scrape_options is None:
@@ -64,19 +63,20 @@ def firecrawl_search(query: str, timeout: int = 15000, limit: int = 5,
     })
     return result
 
-def get_o3_mini_model() -> Callable[..., Any]:
+def get_o3_mini_model() -> Callable[..., Awaitable[Dict[str, Any]]]:
     """
-    Returns a callable wrapping OpenAI ChatCompletion.create.
-    Adds extra parameters (e.g. reasoning_effort, structured_outputs) if OPENAI_MODEL starts with 'o',
+    Returns an async callable wrapping OpenAI ChatCompletion.create.
+    Adds extra parameters (e.g. reasoning_effort) if OPENAI_MODEL starts with 'o',
     mirroring the TS configuration.
     """
     extra_params: Dict[str, Any] = {}
     if OPENAI_MODEL.startswith("o"):
         extra_params["reasoning_effort"] = "medium"  # Not officially supported by OpenAI API.
-        extra_params["structured_outputs"] = True
-    def call_model(prompt: str, **kwargs: Any) -> Any:
+        # Removed "structured_outputs" as it is not a supported parameter.
+
+    async def call_model(prompt: str, **kwargs: Any) -> Dict[str, Any]:
         params = {**extra_params, **kwargs}
-        response = openai.ChatCompletion.create(
+        response = await client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": "You are an expert research assistant."},
@@ -85,6 +85,7 @@ def get_o3_mini_model() -> Callable[..., Any]:
             **params
         )
         return response
+
     return call_model
 
 o3MiniModel = get_o3_mini_model()

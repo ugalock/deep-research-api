@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
-from ai import generate_object
+from ai.ai import generate_object
 from ai.providers import o3MiniModel, trim_prompt, firecrawl_search
 from prompt import system_prompt
 from output_manager import OutputManager
@@ -197,7 +197,9 @@ async def write_final_report(prompt: str, learnings: List[str], visited_urls: Li
     trimmed_learnings = trim_prompt(learnings_wrapped, 150_000)
     full_prompt = (
         f"Given the following prompt from the user, write a final report on the topic using the learnings from research. "
-        f"Make it as detailed as possible, aim for 3 or more pages, include ALL the learnings from research:\n\n"
+        f"Make it as detailed as possible, aim for 3 or more pages, and include ALL the learnings from research. "
+        f"Return your result in JSON format with the following structure:\n"
+        f'{{ "reportMarkdown": <your report markdown> }}.\n\n'
         f"<prompt>{prompt}</prompt>\n\n"
         f"Here are all the learnings from previous research:\n\n"
         f"<learnings>\n{trimmed_learnings}\n</learnings>"

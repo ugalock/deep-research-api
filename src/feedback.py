@@ -1,4 +1,4 @@
-from ai import generate_object
+from ai.ai import generate_object
 from prompt import system_prompt
 from ai.providers import o3MiniModel
 from pydantic import BaseModel
