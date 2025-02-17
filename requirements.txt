@@ -4,3 +4,4 @@ firecrawl-py
 pytest
 nest_asyncio
 requests
+pydantic

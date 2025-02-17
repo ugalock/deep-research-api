@@ -1,6 +1,11 @@
 from ai import generate_object
 from prompt import system_prompt
 from ai.providers import o3MiniModel
+from pydantic import BaseModel
+from typing import List
+
+class FeedbackSchema(BaseModel):
+    questions: List[str]
 
 async def generate_feedback(query: str, num_questions: int = 3):
     prompt_text = (
@@ -13,7 +18,8 @@ async def generate_feedback(query: str, num_questions: int = 3):
         model=o3MiniModel,
         system=system_prompt(),
         prompt=prompt_text,
-        schema={"questions": list}  # Placeholder schema
+        schema=FeedbackSchema
     )
 
-    return result["object"]["questions"][:num_questions]
+    # Access questions as an attribute from the validated Pydantic model.
+    return result["object"].questions[:num_questions]

@@ -7,11 +7,28 @@ from ai import generate_object
 from ai.providers import o3MiniModel, trim_prompt, firecrawl_search
 from prompt import system_prompt
 from output_manager import OutputManager
+from pydantic import BaseModel
 
 output = OutputManager()
 
 def log(*args: Any) -> None:
     output.log(*args)
+
+# --- Pydantic Schemas ---
+class SerpQuery(BaseModel):
+    query: str
+    researchGoal: str
+
+class SerpQueriesSchema(BaseModel):
+    queries: List[SerpQuery]
+
+class SerpResultSchema(BaseModel):
+    learnings: List[str]
+    followUpQuestions: List[str]
+
+class FinalReportSchema(BaseModel):
+    reportMarkdown: str
+# -----------------------------
 
 @dataclass
 class ResearchProgress:
@@ -42,18 +59,17 @@ async def generate_serp_queries(
         model=o3MiniModel,
         system=system_prompt(),
         prompt=prompt_text,
-        schema={"queries": list}  # Placeholder schema
+        schema=SerpQueriesSchema
     )
-    queries = res["object"]["queries"][:num_queries]
-    log(f"Created {len(queries)} queries", queries)
-    return queries
+    log(f"Created {len(res['object'].queries)} queries", res["object"].queries)
+    return res["object"].queries[:num_queries]
 
 async def process_serp_result(
     query: str,
     result: Dict[str, Any],
     num_learnings: int = 3,
     num_follow_up_questions: int = 3
-) -> Dict[str, Any]:
+) -> Any:
     # Extract and trim markdown content from each SERP result.
     contents = [
         trim_prompt(item.get("markdown", ""), 25000)
@@ -72,9 +88,9 @@ async def process_serp_result(
         model=o3MiniModel,
         system=system_prompt(),
         prompt=prompt_text,
-        schema={"learnings": list, "followUpQuestions": list}  # Placeholder schema
+        schema=SerpResultSchema
     )
-    log(f"Created {len(res['object'].get('learnings', []))} learnings", res["object"].get("learnings"))
+    log(f"Created {len(res['object'].learnings)} learnings", res["object"].learnings)
     return res["object"]
 
 async def deep_research(
@@ -108,32 +124,32 @@ async def deep_research(
     serp_queries = await generate_serp_queries(query, learnings, num_queries=breadth)
     report_progress({
         "total_queries": len(serp_queries),
-        "current_query": serp_queries[0].get("query") if serp_queries else None
+        "current_query": serp_queries[0].query if serp_queries else None
     })
     
     loop = asyncio.get_running_loop()
     semaphore = asyncio.Semaphore(CONCURRENCY_LIMIT)
     
-    async def process_query(serpQuery: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_query(serpQuery: Any) -> Dict[str, Any]:
         async with semaphore:
             try:
                 result = await loop.run_in_executor(
                     None,
                     lambda: firecrawl_search(
-                        serpQuery["query"],
+                        serpQuery.query,
                         timeout=15000,
                         limit=5,
                         scrape_options={"formats": ["markdown"]}
                     )
                 )
                 new_learnings_obj = await process_serp_result(
-                    serpQuery["query"],
+                    serpQuery.query,
                     result,
                     num_learnings=breadth // 2,
                     num_follow_up_questions=breadth // 2
                 )
                 newUrls = [item.get("url") for item in result.get("data", []) if item.get("url")]
-                allLearnings = learnings + new_learnings_obj.get("learnings", [])
+                allLearnings = learnings + new_learnings_obj.learnings
                 allUrls = visitedUrls + newUrls
                 new_depth = depth - 1
                 if new_depth > 0:
@@ -141,11 +157,11 @@ async def deep_research(
                         "current_depth": new_depth,
                         "current_breadth": breadth // 2,
                         "completed_queries": progress.completed_queries + 1,
-                        "current_query": serpQuery["query"]
+                        "current_query": serpQuery.query
                     })
                     next_query = (
-                        f"Previous research goal: {serpQuery.get('researchGoal', '')}\n"
-                        f"Follow-up research directions: {chr(10).join(new_learnings_obj.get('followUpQuestions', []))}"
+                        f"Previous research goal: {serpQuery.researchGoal}\n"
+                        f"Follow-up research directions: {chr(10).join(new_learnings_obj.followUpQuestions)}"
                     ).strip()
                     return await deep_research(
                         query=next_query,
@@ -159,15 +175,15 @@ async def deep_research(
                     report_progress({
                         "current_depth": 0,
                         "completed_queries": progress.completed_queries + 1,
-                        "current_query": serpQuery["query"]
+                        "current_query": serpQuery.query
                     })
                     return {"learnings": allLearnings, "visitedUrls": allUrls}
             except Exception as e:
                 err_msg = str(e)
                 if "Timeout" in err_msg:
-                    log(f"Timeout error running query: {serpQuery.get('query', '')}: {e}")
+                    log(f"Timeout error running query: {serpQuery.query}: {e}")
                 else:
-                    log(f"Error running query: {serpQuery.get('query', '')}: {e}")
+                    log(f"Error running query: {serpQuery.query}: {e}")
                 return {"learnings": [], "visitedUrls": []}
     
     tasks = [process_query(q) for q in serp_queries]
@@ -190,15 +206,8 @@ async def write_final_report(prompt: str, learnings: List[str], visited_urls: Li
         model=o3MiniModel,
         system=system_prompt(),
         prompt=full_prompt,
-        schema={"reportMarkdown": str}
+        schema=FinalReportSchema
     )
-    report = res["object"]["reportMarkdown"]
+    report = res["object"].reportMarkdown
     urls_section = "\n\n## Sources\n\n" + "\n".join(f"- {url}" for url in visited_urls)
     return report + urls_section
-
-# For testing purposes, one might run:
-# if __name__ == "__main__":
-#     import sys
-#     query = sys.argv[1] if len(sys.argv) > 1 else "example research query"
-#     result = asyncio.run(deep_research(query, breadth=4, depth=2))
-#     print(result)

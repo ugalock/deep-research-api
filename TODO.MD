@@ -18,9 +18,9 @@
   - [x] Ensure it calls OpenAI with the proper prompt and compiles the learnings and sources.
   - [x] Append the visited URLs section to the report as in the TS version.
 
-- [ ] **Fix any leftover placeholders**
-  - [ ] Replace schema placeholders (e.g., `schema={"queries": list}`) with actual validation (using a library like Pydantic if needed) or remove them.
-  - [ ] Confirm that all placeholder logic is replaced or appropriately handled.
+- [x] **Fix any leftover placeholders**
+  - [x] Replace schema placeholders (e.g., `schema={"queries": list}`) with actual validation (using a library like Pydantic if needed) or remove them.
+  - [x] Confirm that all placeholder logic is replaced or appropriately handled.
 
 - [ ] **Check environment variables**
   - [ ] Verify `.env.local` contains all required keys (`OPENAI_KEY`, `FIRECRAWL_KEY`, etc.).
