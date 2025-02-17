@@ -5,3 +5,4 @@ pytest
 nest_asyncio
 requests
 pydantic
+python-dotenv

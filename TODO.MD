@@ -1,28 +1,39 @@
-- [x] **Complete the `ai` module**
-  - [x] Implement `generate_object` in `ai.py` to mimic TS's `generateObject`.
-  - [x] Ensure it sends the system prompt, user prompt, and handles OpenAI responses.
-  - [x] Return typed data consistent with the TS version.
+- [x] **Environment Variable Consistency**
+  - [x] Confirm all env variables used in TS (OPENAI_KEY, FIRECRAWL_KEY, OPENAI_ENDPOINT, OPENAI_MODEL, CONTEXT_SIZE) are mirrored in Python.
+  - [x] Verify fallback values and ensure .env/.env.local loading logic matches TS defaults.
 
-- [x] **Finish the Firecrawl integration**
-  - [x] Verify the existence of a Python Firecrawl library or create a stub.
-  - [x] Implement the `.search(...)` method to match the expected TS output.
-  - [x] Ensure returned results follow the same structure as in the TS version.
+- [ ] **API Model Configuration Parity**
+  - [ ] Ensure Python’s OpenAI model call includes any additional parameters (e.g., reasoningEffort, structuredOutputs) if needed.
+  - [ ] Compare model configuration between TS and Python versions for consistency.
 
-- [x] **Fill in missing pieces in `deep_research.py`**
-  - [x] Complete the asynchronous logic (e.g., using `asyncio.gather` and semaphores) for handling SERP queries concurrently.
-  - [x] Finalize the `process_serp_result` function to extract learnings and follow-up questions.
-  - [x] Ensure recursion for deeper research (breadth and depth) is properly implemented.
+- [ ] **JSON Parsing and Validation**
+  - [ ] Map all TS zod schemas to equivalent Pydantic models.
+  - [ ] Verify that every TS schema (for SERP queries, final report, etc.) has a matching Python model with identical fields.
 
-- [x] **Implement `write_final_report`**
-  - [x] Create the function to generate the final markdown report.
-  - [x] Ensure it calls OpenAI with the proper prompt and compiles the learnings and sources.
-  - [x] Append the visited URLs section to the report as in the TS version.
+- [ ] **Progress Manager and Output Manager**
+  - [ ] Ensure Python’s OutputManager and ProgressManager replicate the TS console output behavior (cursor movement, clearing lines, redrawing progress).
+  - [ ] Test that progress updates and final output match the TS user experience.
 
-- [x] **Fix any leftover placeholders**
-  - [x] Replace schema placeholders (e.g., `schema={"queries": list}`) with actual validation (using a library like Pydantic if needed) or remove them.
-  - [x] Confirm that all placeholder logic is replaced or appropriately handled.
+- [ ] **Concurrency and Timeouts**
+  - [ ] Confirm that Python’s concurrency (using asyncio.Semaphore) and timeout values (e.g., 15-second search timeout) match TS defaults.
+  - [ ] Verify that the CONCURRENCY_LIMIT is consistent between both versions.
 
-- [ ] **Check environment variables**
-  - [ ] Verify `.env.local` contains all required keys (`OPENAI_KEY`, `FIRECRAWL_KEY`, etc.).
-  - [ ] Ensure the Python code loads these variables using `os.getenv` correctly.
-  - [ ] Confirm consistency between variable names in the TS and Python versions.
+- [ ] **Search and Scrape Options**
+  - [ ] Ensure Python’s Firecrawl search parameters (limit, scrapeOptions with formats ["markdown"]) mirror the TS implementation.
+  - [ ] Validate that the structure of the Firecrawl response (extracting markdown, url) is handled identically.
+
+- [ ] **Additional Testing**
+  - [ ] Extend Python tests to cover providers, feedback, and integration flows—not just text-splitter.
+  - [ ] Ensure that the test coverage in Python matches the TS version.
+
+- [ ] **Report Output Differences**
+  - [ ] Verify that the final report (output.md) is generated and formatted exactly like the TS version.
+  - [ ] Confirm that sources (visited URLs) are appended correctly to the report.
+
+- [ ] **Deployment and Docker Configuration**
+  - [ ] Ensure the Python Dockerfile and docker-compose.yml replicate the TS container setup (correct environment mounting, working directory, etc.).
+  - [ ] Validate that container naming and startup commands provide a consistent experience.
+
+- [ ] **README and Documentation**
+  - [ ] Update the README to reflect any Python-specific setup while mirroring TS instructions.
+  - [ ] Document environment setup, usage instructions, and configuration changes to match the TS version.

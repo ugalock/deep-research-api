@@ -98,13 +98,13 @@ async def deep_research(
     breadth: int,
     depth: int,
     learnings: Optional[List[str]] = None,
-    visitedUrls: Optional[List[str]] = None,
+    visited_urls: Optional[List[str]] = None,
     on_progress: Optional[Callable[[ResearchProgress], None]] = None
 ) -> Dict[str, Any]:
     if learnings is None:
         learnings = []
-    if visitedUrls is None:
-        visitedUrls = []
+    if visited_urls is None:
+        visited_urls = []
         
     progress = ResearchProgress(
         current_depth=depth,
@@ -148,9 +148,9 @@ async def deep_research(
                     num_learnings=breadth // 2,
                     num_follow_up_questions=breadth // 2
                 )
-                newUrls = [item.get("url") for item in result.get("data", []) if item.get("url")]
-                allLearnings = learnings + new_learnings_obj.learnings
-                allUrls = visitedUrls + newUrls
+                new_urls = [item.get("url") for item in result.get("data", []) if item.get("url")]
+                all_learnings = learnings + new_learnings_obj.learnings
+                all_urls = visited_urls + new_urls
                 new_depth = depth - 1
                 if new_depth > 0:
                     report_progress({
@@ -167,8 +167,8 @@ async def deep_research(
                         query=next_query,
                         breadth=breadth // 2,
                         depth=new_depth,
-                        learnings=allLearnings,
-                        visitedUrls=allUrls,
+                        learnings=all_learnings,
+                        visited_urls=all_urls,
                         on_progress=on_progress
                     )
                 else:
@@ -177,20 +177,20 @@ async def deep_research(
                         "completed_queries": progress.completed_queries + 1,
                         "current_query": serpQuery.query
                     })
-                    return {"learnings": allLearnings, "visitedUrls": allUrls}
+                    return {"learnings": all_learnings, "visited_urls": all_urls}
             except Exception as e:
                 err_msg = str(e)
                 if "Timeout" in err_msg:
                     log(f"Timeout error running query: {serpQuery.query}: {e}")
                 else:
                     log(f"Error running query: {serpQuery.query}: {e}")
-                return {"learnings": [], "visitedUrls": []}
+                return {"learnings": [], "visited_urls": []}
     
     tasks = [process_query(q) for q in serp_queries]
     results = await asyncio.gather(*tasks)
     final_learnings = list({learning for res in results for learning in res.get("learnings", [])})
-    final_urls = list({url for res in results for url in res.get("visitedUrls", [])})
-    return {"learnings": final_learnings, "visitedUrls": final_urls}
+    final_urls = list({url for res in results for url in res.get("visited_urls", [])})
+    return {"learnings": final_learnings, "visited_urls": final_urls}
 
 async def write_final_report(prompt: str, learnings: List[str], visited_urls: List[str]) -> str:
     learnings_wrapped = "\n".join(f"<learning>\n{l}\n</learning>" for l in learnings)
