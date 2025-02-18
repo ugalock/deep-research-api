@@ -38,7 +38,7 @@ class ResearchProgress:
     total_queries: int = 0
     completed_queries: int = 0
 
-CONCURRENCY_LIMIT = 2
+CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", 2))
 
 async def generate_serp_queries(
     query: str,
