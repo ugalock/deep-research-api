@@ -4,16 +4,11 @@
 
 Perform iterative research on any topic using Firecrawl for web scraping and OpenAI for LLM-driven query generation.
 
-## Key Features
-- Generates targeted SERP queries based on goals and previous learnings
-- Recursively researches a topic with configurable breadth/depth
-- Gathers insights, follow-up questions, and compiles a final Markdown report
-- Uses asyncio for parallel search handling and Rich for CLI progress
-
 ## Requirements
 - **Python** 3.12 (Tested on Python 3.12; compatibility with other versions is not guaranteed)
 - **OpenAI** API key in `.env` (`OPENAI_KEY`)
 - **Firecrawl** API key in `.env` (`FIRECRAWL_KEY`)
+- **OPENAI_MODEL** (optional): Specifies the OpenAI model to be used for AI-powered functionalities. Defaults to `o3-mini`.
 
 ## Virtual Environment Setup
 
