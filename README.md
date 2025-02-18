@@ -1,5 +1,7 @@
 # Deep Research
 
+**Note:** This project started as a port of [@dzhng/deep-research](https://github.com/dzhng/deep-research).
+
 Perform iterative research on any topic using Firecrawl for web scraping and OpenAI for LLM-driven query generation.
 
 ## Key Features
@@ -9,9 +11,20 @@ Perform iterative research on any topic using Firecrawl for web scraping and Ope
 - Uses asyncio for parallel search handling and Rich for CLI progress
 
 ## Requirements
-- **Python** 3.12+
+- **Python** 3.12 (Tested on Python 3.12; compatibility with other versions is not guaranteed)
 - **OpenAI** API key in `.env` (`OPENAI_KEY`)
 - **Firecrawl** API key in `.env` (`FIRECRAWL_KEY`)
+
+## Virtual Environment Setup
+
+It is recommended to use a Python virtual environment to isolate project dependencies. To set one up, run:
+
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+Then proceed with the installation steps below.
 
 ## Installation
 1. Clone this repo.
