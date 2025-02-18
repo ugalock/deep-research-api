@@ -3,10 +3,18 @@ import re
 from typing import Any, Callable, Optional, Dict, Awaitable
 
 def _clean_json_string(text: str) -> str:
-    # Remove leading/trailing triple backticks or other code fences
-    cleaned = re.sub(r'^```(?:json)?\s*', '', text)
-    cleaned = re.sub(r'\s*```$', '', cleaned)
-    return cleaned
+    # Remove leading/trailing code fences.
+    text = re.sub(r'^```(?:json)?\s*', '', text)
+    text = re.sub(r'\s*```$', '', text)
+    # Extract the JSON object from any extra text.
+    start = text.find('{')
+    end = text.rfind('}')
+    if start != -1 and end != -1:
+        text = text[start:end+1]
+    # Escape newline characters that are not already escaped.
+    text = re.sub(r'(?<!\\)\n', '\\n', text)
+    return text
+
 
 async def generate_object(
     *,
