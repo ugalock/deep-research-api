@@ -35,7 +35,7 @@ class ConstantBackoffRetry(Retry):
     Custom Retry class that always returns a constant 1s backoff time for retries.
     """
     def get_backoff_time(self) -> float:
-        # If there is any retry history, return a constant 1 second delay.
+        # If there is any retry history, return a constant 5 second delay.
         return 5.0 if self.history else 0.0
 
 def trim_prompt(prompt: str, context_size: int = CONTEXT_SIZE) -> str:
