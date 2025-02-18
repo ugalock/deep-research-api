@@ -1,37 +1,38 @@
 import pytest
-from text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 def test_split_text_by_separators():
-    # Test with initial chunkSize 50 and chunkOverlap 10
     splitter = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=10)
     text = "Hello world, this is a test of the recursive text splitter."
     expected = ["Hello world", "this is a test of the recursive text splitter"]
     result = splitter.split_text(text)
-    assert result == expected, f"Expected {expected}, got {result}"
+    assert result == expected
 
-    # Test with updated chunkSize 100
     splitter.chunk_size = 100
-    text2 = ("Hello world, this is a test of the recursive text splitter. "
-             "If I have a period, it should split along the period.")
+    text2 = (
+        "Hello world, this is a test of the recursive text splitter. "
+        "If I have a period, it should split along the period."
+    )
     expected2 = [
         "Hello world, this is a test of the recursive text splitter",
         "If I have a period, it should split along the period."
     ]
     result2 = splitter.split_text(text2)
-    assert result2 == expected2, f"Expected {expected2}, got {result2}"
+    assert result2 == expected2
 
-    # Test with updated chunkSize 110
     splitter.chunk_size = 110
-    text3 = ("Hello world, this is a test of the recursive text splitter. "
-             "If I have a period, it should split along the period.\n"
-             "Or, if there is a new line, it should prioritize splitting on new lines instead.")
+    text3 = (
+        "Hello world, this is a test of the recursive text splitter. "
+        "If I have a period, it should split along the period.\n"
+        "Or, if there is a new line, it should prioritize splitting on new lines instead."
+    )
     expected3 = [
         "Hello world, this is a test of the recursive text splitter",
         "If I have a period, it should split along the period.",
         "Or, if there is a new line, it should prioritize splitting on new lines instead."
     ]
     result3 = splitter.split_text(text3)
-    assert result3 == expected3, f"Expected {expected3}, got {result3}"
+    assert result3 == expected3
 
 def test_empty_string():
     splitter = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=10)
@@ -43,12 +44,12 @@ def test_special_characters_and_large_texts():
     large_text = "A" * 1000
     expected = ["A" * 200] * 5
     result = splitter.split_text(large_text)
-    assert result == expected, f"Expected {expected}, got {result}"
+    assert result == expected
 
     special_char_text = "Hello!@# world$%^ &*( this) is+ a-test"
     expected_special = ["Hello!@#", "world$%^", "&*( this)", "is+", "a-test"]
     result_special = splitter.split_text(special_char_text)
-    assert result_special == expected_special, f"Expected {expected_special}, got {result_special}"
+    assert result_special == expected_special
 
 def test_invalid_configuration():
     with pytest.raises(ValueError, match="Cannot have chunkOverlap >= chunkSize"):

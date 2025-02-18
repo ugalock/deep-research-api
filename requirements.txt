@@ -1,6 +1,5 @@
 openai
 tiktoken
-firecrawl-py
 pytest
 nest_asyncio
 requests

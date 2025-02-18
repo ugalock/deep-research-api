@@ -4,7 +4,7 @@ load_dotenv()
 
 from openai import AsyncOpenAI
 import tiktoken
-from firecrawl import FirecrawlApp
+import requests
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from typing import Any, Dict, Optional, Callable, Awaitable
 
@@ -24,11 +24,7 @@ if not FIRECRAWL_KEY:
 # Configure OpenAI
 client = AsyncOpenAI(api_key=OPENAI_KEY, base_url=OPENAI_ENDPOINT)
 
-# Initialize Firecrawl client
-firecrawl_app = FirecrawlApp(api_key=FIRECRAWL_KEY, api_url=FIRECRAWL_BASE_URL)
-
 MIN_CHUNK_SIZE: int = 140
-# Using tiktoken.get_encoding for a fixed encoding as in the TS version ('o200k_base')
 tokenizer = tiktoken.get_encoding("o200k_base")
 
 def trim_prompt(prompt: str, context_size: int = CONTEXT_SIZE) -> str:
@@ -42,37 +38,73 @@ def trim_prompt(prompt: str, context_size: int = CONTEXT_SIZE) -> str:
     chunk_size = len(prompt) - (overflow_tokens * 3)
     if chunk_size < MIN_CHUNK_SIZE:
         return prompt[:MIN_CHUNK_SIZE]
+
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=0)
     chunks = splitter.split_text(prompt)
     if not chunks:
         return ""
     trimmed = chunks[0]
+    # If the chunk is still the same size as the whole prompt, do a direct cut
     if len(trimmed) == len(prompt):
         return trim_prompt(prompt[:chunk_size], context_size)
     return trim_prompt(trimmed, context_size)
 
 def firecrawl_search(query: str, timeout: int = 15000, limit: int = 5,
-                      scrape_options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """Search via Firecrawl using default scrape options (markdown)."""
+                     scrape_options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    Search via Firecrawl using default scrape options (markdown) by making a direct requests call.
+    """
+    if not FIRECRAWL_KEY:
+        raise Exception("FIRECRAWL_KEY not configured. Please set in .env file.")
+
     if scrape_options is None:
-        scrape_options = {"formats": ["markdown"]}
-    result = firecrawl_app.search(query, params={
+        scrape_options = {}
+
+    clean_query = query.strip().strip('"')
+    if not clean_query:
+        raise Exception("Empty query after cleaning")
+
+    print(f"Making Firecrawl request to: {FIRECRAWL_BASE_URL}/search")
+    print(f"Query: {clean_query}")
+
+    url = f"{FIRECRAWL_BASE_URL}/search"
+    payload = {
+        "query": clean_query,
         "limit": limit,
-        "scrapeOptions": scrape_options,
-        "timeout": timeout
-    })
-    return result
+        "timeout": timeout,
+        "tbs": "",
+        "lang": "en",
+        "country": "us",
+        "location": "",
+        "scrapeOptions": scrape_options
+    }
+    headers = {
+        "Authorization": f"Bearer {FIRECRAWL_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        result = response.json()
+        if result.get("success"):
+            return result
+        else:
+            print(f"Unexpected response format: {result}")
+            return {"data": []}
+    except Exception as e:
+        print(f"Firecrawl error details: {str(e)}")
+        print(f"Error type: {type(e)}")
+        return {"data": []}
 
 def get_o3_mini_model() -> Callable[..., Awaitable[Dict[str, Any]]]:
     """
-    Returns an async callable wrapping OpenAI ChatCompletion.create.
-    Adds extra parameters (e.g. reasoning_effort) if OPENAI_MODEL starts with 'o',
-    mirroring the TS configuration.
+    Returns an async callable that calls the OpenAI ChatCompletion endpoint,
+    matching the TS approach with 'reasoningEffort' if model starts with 'o'.
     """
     extra_params: Dict[str, Any] = {}
     if OPENAI_MODEL.startswith("o"):
-        extra_params["reasoning_effort"] = "medium"  # Not officially supported by OpenAI API.
-        # Removed "structured_outputs" as it is not a supported parameter.
+        extra_params["reasoning_effort"] = "medium"
 
     async def call_model(prompt: str, **kwargs: Any) -> Dict[str, Any]:
         params = {**extra_params, **kwargs}

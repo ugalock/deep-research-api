@@ -4,7 +4,7 @@ import sys
 class ProgressManager:
     def __init__(self):
         self.last_progress = None
-        self.progress_lines = 4  # Fixed number of lines for progress display
+        self.progress_lines = 4
         sys.stdout.write('\n' * self.progress_lines)
         sys.stdout.flush()
 
@@ -17,7 +17,10 @@ class ProgressManager:
     def draw_progress_bar(self, label: str, value: int, total: int, char: str = '=') -> str:
         term = self.get_terminal_size()
         width = min(30, term.columns - 20) if term.columns else 30
-        percent = (value / total) * 100 if total else 0
+        if total == 0:
+            percent = 0
+        else:
+            percent = (value / total) * 100
         filled = round((width * percent) / 100)
         empty = width - filled
         return f"{label} [{char * filled}{' ' * empty}] {round(percent)}%"
@@ -29,13 +32,11 @@ class ProgressManager:
         progress_start = terminal_height - self.progress_lines
 
         sys.stdout.write(f"\x1B[{progress_start};1H\x1B[0J")
-
         lines = [
             self.draw_progress_bar("Depth:   ", progress.total_depth - progress.current_depth, progress.total_depth, '█'),
             self.draw_progress_bar("Breadth: ", progress.total_breadth - progress.current_breadth, progress.total_breadth, '█'),
             self.draw_progress_bar("Queries: ", progress.completed_queries, progress.total_queries, '█'),
         ]
-
         if getattr(progress, 'current_query', None):
             lines.append(f"Current:  {progress.current_query}")
 
