@@ -5,7 +5,7 @@
 Perform iterative research on any topic using Firecrawl for web scraping and OpenAI for LLM-driven query generation.
 
 ## Requirements
-- **Python** 3.12 (Tested on Python 3.12; compatibility with other versions is not guaranteed)
+- **Python** 3.11+ (Untested on earlier versions)
 - **OpenAI** API key in `.env` (`OPENAI_KEY`)
 - **Firecrawl** API key in `.env` (`FIRECRAWL_KEY`)
 - **OPENAI_MODEL** (optional): Specifies the OpenAI model to be used for AI-powered functionalities. Defaults to `o3-mini`.
