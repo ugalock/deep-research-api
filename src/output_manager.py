@@ -1,67 +1,42 @@
-import sys
 import os
+from cli_style import pretty_log, ResearchProgressDisplay
 
 class OutputManager:
+    """
+    Manages console output and progress display via Rich-based styling.
+    """
     def __init__(self):
-        self.progress_lines = 4
-        self.progress_area = []
+        # We keep a Rich-based progress manager here:
+        self.progress_display = ResearchProgressDisplay()
         self.initialized = False
-        sys.stdout.write('\n' * self.progress_lines)
-        sys.stdout.flush()
-        self.initialized = True
 
     def log(self, *args):
-        if os.getenv("DEBUG_LOGS"):
-            print(*args)
-            return
-
-        if self.initialized:
-            sys.stdout.write(f"\x1B[{self.progress_lines}A")
-            sys.stdout.write("\x1B[0J")
-        print(*args)
-        if self.initialized:
-            self.draw_progress()
+        """
+        Replaces the old line-based console approach with pretty_log for nicer styling.
+        """
+        pretty_log(*args)
 
     def update_progress(self, progress):
-        depth_done = progress.total_depth - progress.current_depth
-        breadth_done = progress.total_breadth - progress.current_breadth
-        if progress.total_depth:
-            depth_pct = round(depth_done / progress.total_depth * 100)
-        else:
-            depth_pct = 0
-        if progress.total_breadth:
-            breadth_pct = round(breadth_done / progress.total_breadth * 100)
-        else:
-            breadth_pct = 0
-        if progress.total_queries:
-            queries_pct = round(progress.completed_queries / progress.total_queries * 100)
-        else:
-            queries_pct = 0
+        """
+        If not initialized, start the progress bars. Then update them.
+        """
+        if not self.initialized:
+            self.progress_display.start(
+                total_depth=progress.total_depth,
+                total_breadth=progress.total_breadth,
+                total_queries=progress.total_queries
+            )
+            self.initialized = True
 
-        self.progress_area = [
-            f"Depth:    [{self.get_progress_bar(depth_done, progress.total_depth)}] {depth_pct}%",
-            f"Breadth:  [{self.get_progress_bar(breadth_done, progress.total_breadth)}] {breadth_pct}%",
-            f"Queries:  [{self.get_progress_bar(progress.completed_queries, progress.total_queries)}] {queries_pct}%",
-            f"Current:  {progress.current_query}" if getattr(progress, 'current_query', None) else ''
-        ]
-        self.draw_progress()
+        self.progress_display.update(
+            current_depth=progress.current_depth,
+            total_depth=progress.total_depth,
+            current_breadth=progress.current_breadth,
+            total_breadth=progress.total_breadth,
+            completed_queries=progress.completed_queries,
+            total_queries=progress.total_queries,
+            current_query=getattr(progress, 'current_query', None)
+        )
 
-    def get_progress_bar(self, value, total):
-        width = 30
-        if total == 0:
-            filled = 0
-        else:
-            filled = round((width * value) / total)
-        return '█' * filled + ' ' * (width - filled)
-
-    def draw_progress(self):
-        if not self.initialized or not self.progress_area:
-            return
-        try:
-            terminal_height = os.get_terminal_size().lines
-        except OSError:
-            terminal_height = 24
-        sys.stdout.write(f"\x1B[{terminal_height - self.progress_lines};1H")
-        sys.stdout.write("\n".join(self.progress_area))
-        sys.stdout.write(f"\x1B[{terminal_height - self.progress_lines - 1};1H")
-        sys.stdout.flush()
+    def stop_progress(self):
+        self.progress_display.stop()
