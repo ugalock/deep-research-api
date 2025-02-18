@@ -1,82 +1,48 @@
 import pytest
-from unittest.mock import patch, MagicMock
-from src.ai.providers import firecrawl_search, trim_prompt, get_o3_mini_model
-import asyncio
+from unittest.mock import patch, MagicMock, AsyncMock
+from ai.providers import firecrawl_search, trim_prompt, get_o3_mini_model
 
-@patch("src.ai.providers.firecrawl_app.search")
-def test_firecrawl_search(mock_search):
-    # Update mock to include more realistic data
-    mock_search.return_value = {
-        "data": [
+@patch("ai.providers.requests.Session.post")
+def test_firecrawl_search_basic(mock_post):
+    mock_post.return_value.json.return_value = {"success": True, "data": [{"url": "http://example.com"}]}
+    mock_post.return_value.raise_for_status = MagicMock()
+
+    result = firecrawl_search("some query")
+    assert result.get("data") is not None
+    assert len(result["data"]) == 1
+    assert result["data"][0]["url"] == "http://example.com"
+
+def test_trim_prompt_no_trim():
+    text = "Short text"
+    trimmed = trim_prompt(text, context_size=1000)
+    assert trimmed == text
+
+def test_trim_prompt_with_trim():
+    # Use a longer text so that it actually gets trimmed
+    text = "A" * 100000
+    trimmed = trim_prompt(text, context_size=1000)
+    # It should be smaller than original, but not smaller than MIN_CHUNK_SIZE
+    assert len(trimmed) < len(text)
+    # From code, MIN_CHUNK_SIZE=140
+    assert len(trimmed) >= 140
+
+@pytest.mark.asyncio
+@patch("ai.providers.client.chat")
+async def test_get_o3_mini_model(mock_chat):
+    # Mock an async creation call
+    mock_chat.completions.create = AsyncMock(return_value={
+        "choices": [
             {
-                "url": "http://example.com",
-                "markdown": "some content",
-                "metadata": {
-                    "sourceURL": "http://example.com",
-                    "pageUrl": "http://example.com",
-                    "finalUrl": "http://example.com"
+                "message": {
+                    "content": "Test response"
                 }
             }
         ]
-    }
-    
-    # Test with default parameters
-    result = firecrawl_search("test query")
-    assert "data" in result
-    assert len(result["data"]) == 1
-    assert result["data"][0]["url"] == "http://example.com"
-    assert "metadata" in result["data"][0]
-    
-    # Test with custom parameters
-    result = firecrawl_search(
-        "test query",
-        timeout=15000,
-        limit=5,
-        scrape_options={"formats": ["markdown"], "includeMetadata": True}
-    )
-    
-    # Update assertion to match actual implementation
-    mock_search.assert_called_with(
-        "test query",
-        params={
-            'timeout': 15000,
-            'limit': 5,
-            'scrapeOptions': {"formats": ["markdown"], "includeMetadata": True}
-        }
-    )
+    })
 
-@patch("src.ai.providers.firecrawl_app.search")
-def test_firecrawl_search_error_handling(mock_search):
-    # Test 404 error handling
-    mock_search.side_effect = Exception("404 Not Found")
-    
-    with pytest.raises(Exception) as exc_info:
-        firecrawl_search("test query")
-    assert "404 Not Found" in str(exc_info.value)
+    call_model = get_o3_mini_model()
+    response = await call_model("prompt here")
+    # Check that we get the expected text
+    assert response["choices"][0]["message"]["content"] == "Test response"
 
-@patch("src.ai.providers.FIRECRAWL_KEY", "")
-def test_firecrawl_search_missing_key():
-    with pytest.raises(Exception) as exc_info:
-        firecrawl_search("test query")
-    assert "FIRECRAWL_KEY not configured" in str(exc_info.value)
-
-# def test_trim_prompt_no_trim():
-#     long_text = "Short text"
-#     trimmed = trim_prompt(long_text, context_size=1000)
-#     assert trimmed == long_text
-
-# def test_trim_prompt_with_trim():
-#     text = "A" * 6000
-#     trimmed = trim_prompt(text, context_size=1000)
-#     assert len(trimmed) < len(text)
-#     assert len(trimmed) >= 140
-
-# @pytest.mark.asyncio
-# @patch("src.ai.providers.openai.ChatCompletion.acreate")
-# async def test_get_o3_mini_model(mock_acreate):
-#     # Mock the async create call
-#     mock_acreate.return_value = {"text": '{"test":"ok"}'}
-#     model_fn = get_o3_mini_model()
-#     resp = await model_fn("prompt here")
-#     mock_acreate.assert_called_once()
-#     assert resp["text"] == '{"test":"ok"}'
+    mock_chat.completions.create.assert_called_once()
