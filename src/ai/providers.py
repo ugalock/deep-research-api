@@ -5,6 +5,8 @@ load_dotenv()
 from openai import AsyncOpenAI
 import tiktoken
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from typing import Any, Dict, Optional, Callable, Awaitable
 
@@ -26,6 +28,15 @@ client = AsyncOpenAI(api_key=OPENAI_KEY, base_url=OPENAI_ENDPOINT)
 
 MIN_CHUNK_SIZE: int = 140
 tokenizer = tiktoken.get_encoding("o200k_base")
+
+# Add the custom retry class below the imports
+class ConstantBackoffRetry(Retry):
+    """
+    Custom Retry class that always returns a constant 1s backoff time for retries.
+    """
+    def get_backoff_time(self) -> float:
+        # If there is any retry history, return a constant 1 second delay.
+        return 5.0 if self.history else 0.0
 
 def trim_prompt(prompt: str, context_size: int = CONTEXT_SIZE) -> str:
     """Trim the prompt recursively to ensure the token count fits within context_size."""
@@ -49,10 +60,27 @@ def trim_prompt(prompt: str, context_size: int = CONTEXT_SIZE) -> str:
         return trim_prompt(prompt[:chunk_size], context_size)
     return trim_prompt(trimmed, context_size)
 
+def _get_retry_session(total: int = 3, backoff_factor: float = 1, status_forcelist: Optional[list] = None) -> requests.Session:
+    if status_forcelist is None:
+        status_forcelist = [429, 500, 502, 503, 504]
+    session = requests.Session()
+    # Use the custom ConstantBackoffRetry which enforces a 1s sleep before retrying
+    retries = ConstantBackoffRetry(
+        total=total,
+        backoff_factor=backoff_factor,  # Note: This value is not used as get_backoff_time is overridden.
+        status_forcelist=status_forcelist,
+        allowed_methods=["POST"]
+    )
+    adapter = HTTPAdapter(max_retries=retries)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
 def firecrawl_search(query: str, timeout: int = 15000, limit: int = 5,
                      scrape_options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Search via Firecrawl using default scrape options (markdown) by making a direct requests call.
+    Implements retry logic for handling rate limits and transient errors.
     """
     if not FIRECRAWL_KEY:
         raise Exception("FIRECRAWL_KEY not configured. Please set in .env file.")
@@ -83,8 +111,9 @@ def firecrawl_search(query: str, timeout: int = 15000, limit: int = 5,
         "Content-Type": "application/json"
     }
 
+    session = _get_retry_session()
     try:
-        response = requests.post(url, json=payload, headers=headers)
+        response = session.post(url, json=payload, headers=headers)
         response.raise_for_status()
         result = response.json()
         if result.get("success"):

@@ -1,5 +1,12 @@
 import json
+import re
 from typing import Any, Callable, Optional, Dict, Awaitable
+
+def _clean_json_string(text: str) -> str:
+    # Remove leading/trailing triple backticks or other code fences
+    cleaned = re.sub(r'^```(?:json)?\s*', '', text)
+    cleaned = re.sub(r'\s*```$', '', cleaned)
+    return cleaned
 
 async def generate_object(
     *,
@@ -20,6 +27,9 @@ async def generate_object(
         text_output = response.choices[0].message.content
     except (AttributeError, IndexError) as e:
         raise ValueError(f"Failed to extract text from model response: {e}\nResponse: {response}")
+
+    # Clean up common JSON formatting issues before parsing
+    text_output = _clean_json_string(text_output)
 
     # No bullet or digit fallback; we rely on the model returning valid JSON.
     try:
