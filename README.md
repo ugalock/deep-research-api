@@ -76,7 +76,6 @@ flowchart TB
 - **Python** 3.11+ (Untested on earlier versions)
 - **OpenAI** API key in `.env` (`OPENAI_KEY`)
 - **Firecrawl** API key in `.env` (`FIRECRAWL_KEY`)
-- **OPENAI_MODEL** (optional): Specifies the OpenAI model to be used for AI-powered functionalities. Defaults to `o3-mini`.
 
 ## Virtual Environment Setup
 
@@ -93,6 +92,9 @@ Then proceed with the installation steps below.
 1. Clone this repo.
 2. Rename `.env.example` to `.env` and insert valid API keys.
 3. Run `pip install -r requirements.txt`.
+
+## Testing
+- run `pytest` to ensure you have everything wired up correctly.
 
 ## Usage
 
@@ -118,19 +120,24 @@ The system will then:
 
 The final report will be saved as `output.md` in your working directory.
 
-## Testing
-- `pytest` runs some basic tests to ensure you have everything wired up correctly.
-
 ## Docker
 1. Build with `docker build -t deep-research .`
 2. Run with `docker-compose up`
 
-### Concurrency
+## Concurrency
 
 If you have a paid version of Firecrawl or a local version, feel free to increase the `CONCURRENCY_LIMIT` in `.env` so it runs a lot faster.
 
 If you have a free version, you may sometimes run into rate limit errors. You can reduce the `CONCURRENCY_LIMIT` to 1, but it will run a lot slower.
 
+## Custom endpoints and models
+
+There are 2 other optional env vars that lets you tweak the endpoint (for other OpenAI compatible APIs like OpenRouter or Gemini) as well as the model string. By default, `o3-mini` is used.
+
+```bash
+OPENAI_ENDPOINT="custom_endpoint"
+OPENAI_MODEL="custom_model"
+```
 
 ## How It Works
 
