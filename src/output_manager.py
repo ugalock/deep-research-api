@@ -1,18 +1,25 @@
-import os
 from cli_style import pretty_log, ResearchProgressDisplay
 
 class OutputManager:
     """
     Manages console output and progress display via Rich-based styling.
     """
-    def __init__(self):
-        # We keep a Rich-based progress manager here:
+
+    def __init__(self, verbose: bool = False):
         self.progress_display = ResearchProgressDisplay()
         self.initialized = False
+        self.verbose = verbose
 
-    def log(self, *args):
+    def debug(self, *args):
         """
-        Replaces the old line-based console approach with pretty_log for nicer styling.
+        Prints logs only if verbose mode is enabled.
+        """
+        if self.verbose:
+            pretty_log(*args)
+
+    def info(self, *args):
+        """
+        Always prints logs (for user interactions or final important messages).
         """
         pretty_log(*args)
 

@@ -9,10 +9,18 @@ from prompt import system_prompt
 from output_manager import OutputManager
 from pydantic import BaseModel
 
+# Use a single shared OutputManager if you like, or have run.py pass in an instance.
 output = OutputManager()
 
-def log(*args: Any) -> None:
-    output.log(*args)
+@dataclass
+class ResearchProgress:
+    current_depth: int
+    total_depth: int
+    current_breadth: int
+    total_breadth: int
+    current_query: Optional[str] = None
+    total_queries: int = 0
+    completed_queries: int = 0
 
 class SerpQuery(BaseModel):
     query: str
@@ -27,16 +35,6 @@ class SerpResultSchema(BaseModel):
 
 class FinalReportSchema(BaseModel):
     reportMarkdown: str
-
-@dataclass
-class ResearchProgress:
-    current_depth: int
-    total_depth: int
-    current_breadth: int
-    total_breadth: int
-    current_query: Optional[str] = None
-    total_queries: int = 0
-    completed_queries: int = 0
 
 CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", 2))
 
@@ -53,7 +51,6 @@ async def generate_serp_queries(
             + "\n".join(learnings)
         )
 
-    # Added explicit JSON format instructions:
     prompt_text = (
         f"Given the following prompt from the user, generate a list of SERP queries to research the topic.\n\n"
         f"Return your result in JSON format with the shape:\n"
@@ -69,7 +66,7 @@ async def generate_serp_queries(
         prompt=prompt_text,
         schema=SerpQueriesSchema
     )
-    log(f"Created {len(res['object'].queries)} queries", res["object"].queries)
+    output.debug(f"Created {len(res['object'].queries)} queries", res["object"].queries)
     return res["object"].queries[:num_queries]
 
 async def process_serp_result(
@@ -83,10 +80,9 @@ async def process_serp_result(
         if "markdown" in item:
             contents.append(trim_prompt(item["markdown"], 25000))
 
-    log(f"Ran {query}, found {len(contents)} contents")
+    output.debug(f"Ran {query}, found {len(contents)} contents")
 
     contents_wrapped = "\n".join(f"<content>\n{c}\n</content>" for c in contents)
-    # Added explicit JSON format instructions:
     prompt_text = (
         f"Given the following contents from a SERP search for <query>{query}</query>, generate a list of learnings.\n"
         f"Return your result in JSON format with the shape:\n"
@@ -102,7 +98,7 @@ async def process_serp_result(
         prompt=prompt_text,
         schema=SerpResultSchema
     )
-    log(f"Created {len(res['object'].learnings)} learnings", res["object"].learnings)
+    output.debug(f"Created {len(res['object'].learnings)} learnings", res["object"].learnings)
     return res["object"]
 
 async def deep_research(
@@ -126,6 +122,7 @@ async def deep_research(
         total_queries=0,
         completed_queries=0
     )
+
     def report_progress(update: Dict[str, Any]) -> None:
         for k, v in update.items():
             setattr(progress, k, v)
@@ -144,7 +141,7 @@ async def deep_research(
     async def process_query(serpQ: SerpQuery) -> Dict[str, Any]:
         async with sem:
             try:
-                log(f"Processing SERP query: {serpQ}")
+                output.debug(f"Processing SERP query: {serpQ}")
                 result = await loop.run_in_executor(
                     None,
                     lambda: firecrawl_search(
@@ -153,9 +150,9 @@ async def deep_research(
                         limit=5,
                     )
                 )
-                log(f"Search results received for query '{serpQ.query}': {result}")
+                output.debug(f"Search results received for query '{serpQ.query}': {result}")
                 if not result.get("data"):
-                    log(f"No results found for query: {serpQ.query}")
+                    output.debug(f"No results found for query: {serpQ.query}")
                     return {"learnings": [], "visited_urls": []}
 
                 new_learnings_obj = await process_serp_result(
@@ -180,7 +177,7 @@ async def deep_research(
                 all_urls = visited_urls + new_urls
                 new_depth = depth - 1
                 if new_depth > 0:
-                    log(f"Researching deeper, breadth: {breadth // 2}, depth: {new_depth}")
+                    output.debug(f"Researching deeper, breadth: {breadth // 2}, depth: {new_depth}")
                     report_progress({
                         "current_depth": new_depth,
                         "current_breadth": breadth // 2,
@@ -207,7 +204,7 @@ async def deep_research(
                     })
                     return {"learnings": all_learnings, "visited_urls": all_urls}
             except Exception as e:
-                log(f"Error running query: {serpQ.query}: {e}")
+                output.debug(f"Error running query: {serpQ.query}: {e}")
                 return {"learnings": [], "visited_urls": []}
 
     tasks = [process_query(q) for q in serp_queries]

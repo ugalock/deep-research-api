@@ -1,4 +1,4 @@
-from typing import Optional
+import json
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
@@ -17,9 +17,15 @@ def show_header(title: str) -> None:
 
 def pretty_log(*args: str) -> None:
     """
-    Print logs in a pleasing panel with time info and color styling.
+    Print logs in a Rich panel. If the text is valid JSON, pretty-print it.
     """
-    combined = " ".join(str(arg) for arg in args)
+    combined = " ".join(str(arg) for arg in args).strip()
+    if combined.startswith("{") or combined.startswith("["):
+        try:
+            parsed = json.loads(combined)
+            combined = json.dumps(parsed, indent=2, ensure_ascii=False)
+        except json.JSONDecodeError:
+            pass
     panel = Panel.fit(combined, style="bold white on black")
     console.print(panel)
 
@@ -32,6 +38,7 @@ def ask_user(prompt_text: str) -> str:
 class ResearchProgressDisplay:
     """
     Helper to show a Rich-based progress bar across Depth, Breadth, and Queries.
+    Keeps the bar at the bottom, updated in place.
     """
     def __init__(self):
         self.progress = Progress(
@@ -40,7 +47,7 @@ class ResearchProgressDisplay:
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
             TimeRemainingColumn(),
             console=console,
-            transient=True
+            transient=False  # keep the progress bars pinned at the bottom
         )
         self.depth_task = None
         self.breadth_task = None
@@ -55,7 +62,7 @@ class ResearchProgressDisplay:
     def update(self, current_depth: int, total_depth: int,
                current_breadth: int, total_breadth: int,
                completed_queries: int, total_queries: int,
-               current_query: Optional[str] = None) -> None:
+               current_query: str = None) -> None:
         depth_done = total_depth - current_depth
         breadth_done = total_breadth - current_breadth
 
