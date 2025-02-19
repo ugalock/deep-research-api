@@ -137,6 +137,8 @@ Here's what the research assistant looks like in action:
 
 ![Deep Research CLI Interface](docs/cli-example.png)
 
+The output generated from this example can be found in [docs/output-example.md](docs/output-example.md).
+
 ## Concurrency
 
 If you have a paid version of Firecrawl or a local version, feel free to increase the `CONCURRENCY_LIMIT` in `.env` so it runs a lot faster.
