@@ -1,8 +1,15 @@
-# Deep Research
+# Python Port of deep-research
 
-**Note:** This project started as a mirror of [@dzhng/deep-research](https://github.com/dzhng/deep-research). He deserves most of the credit!
+**Note:** This project is a Python implementation of the excellent work done by [@dzhng/deep-research](https://github.com/dzhng/deep-research). All core functionality from the original TypeScript repository has been preserved, with some additional user-friendly enhancements for Python developers. Full credit for the original design and architecture goes to the original author.
 
-Perform iterative research on any topic using Firecrawl for web scraping and OpenAI for LLM-driven query generation.
+If you find this Python version useful, please consider starring both this repository and the original.
+
+Reach out to me on [X/Twitter](https://x.com/kory_kilpatrick) if you have any questions or are using this to build something cool!
+
+## Deep Research
+
+Perform iterative research on any topic using Firecrawl for web scraping and OpenAI for 
+LLM-driven query generation.
 
 ## How It Works
 
@@ -73,7 +80,7 @@ flowchart TB
 - **Concurrent Processing**: Handles multiple searches and result processing in parallel for efficiency
 
 ## Requirements
-- **Python** 3.11+ (Untested on earlier versions)
+- **Python** Tested on 3.11 and 3.12
 - **OpenAI** API key in `.env` (`OPENAI_KEY`)
 - **Firecrawl** API key in `.env` (`FIRECRAWL_KEY`)
 
@@ -123,6 +130,12 @@ The final report will be saved as `output.md` in your working directory.
 ## Docker
 1. Build with `docker build -t deep-research .`
 2. Run with `docker-compose up`
+
+## Example
+
+Here's what the research assistant looks like in action:
+
+![Deep Research CLI Interface](docs/cli-example.png)
 
 ## Concurrency
 
