@@ -80,7 +80,7 @@ flowchart TB
 - **Concurrent Processing**: Handles multiple searches and result processing in parallel for efficiency
 
 ## Requirements
-- **Python** Tested on 3.11 and 3.12
+- **Python** >= 3.9
 - **OpenAI** API key in `.env` (`OPENAI_KEY`)
 - **Firecrawl** API key in `.env` (`FIRECRAWL_KEY`)
 
