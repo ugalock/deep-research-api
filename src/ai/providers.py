@@ -73,19 +73,20 @@ class ModelInfo:
         elif self.model in Model.__args__[0].__args__:
             self.provider = "anthropic"
         else:
-            # We'll need to do this synchronously during initialization
-            try:
-                # Try to use an existing event loop
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # If we're already in an event loop, we need to create a new one for this task
-                    asyncio.run_coroutine_threadsafe(self._determine_provider(), loop).result()
-                else:
-                    # If there's a loop but it's not running, we can use it
-                    loop.run_until_complete(self._determine_provider())
-            except RuntimeError:
-                # If no event loop exists, create one
-                asyncio.run(self._determine_provider())
+            raise Exception(f"Unable to determine provider for model: {self.model}")
+            # # We'll need to do this synchronously during initialization
+            # try:
+            #     # Try to use an existing event loop
+            #     loop = asyncio.get_event_loop()
+            #     if loop.is_running():
+            #         # If we're already in an event loop, we need to create a new one for this task
+            #         asyncio.run_coroutine_threadsafe(self._determine_provider(), loop).result()
+            #     else:
+            #         # If there's a loop but it's not running, we can use it
+            #         loop.run_until_complete(self._determine_provider())
+            # except RuntimeError:
+            #     # If no event loop exists, create one
+            #     asyncio.run(self._determine_provider())
     
     async def _determine_provider(self):
         """Determine which provider can handle the specified model."""

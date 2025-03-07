@@ -75,11 +75,11 @@ class Session:
             # output = None
             
             # Combine initial prompt with follow-up answers
-            combined_prompt = (
-                f"Initial Prompt: {self.prompt}\n"
+            follow_up_qas = (
                 "Follow-up Questions and Answers:\n" +
                 "\n".join(f"Q: {q}\nA: {a}" for q, a in zip(self.follow_up_questions, self.answers))
-            )
+            ) if self.answers else ""
+            combined_prompt = f"Initial Prompt: {self.prompt}\n" + follow_up_qas
             
             # Start the research process
             result = await deep_research(
@@ -114,7 +114,8 @@ class Session:
             
             # Update session with complete results
             self.result = {
-                "prompt": combined_prompt,
+                "prompt": self.prompt,
+                "questions_and_answers": follow_up_qas,
                 "report": report,
                 "sources": visited_urls
             }
@@ -159,6 +160,7 @@ async def start_research(request: ResearchRequest):
     
     # Generate follow-up questions
     follow_up_questions = await generate_feedback(query=request.prompt, model_info=model_info)
+
     session.follow_up_questions = follow_up_questions
     
     # Store the session

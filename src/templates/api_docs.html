@@ -87,8 +87,8 @@
   "job_id": "unique-uuid",        // Unique identifier for this research session
   "status": "pending_answers",     // Current status of the research session
   "questions": [                  // Follow-up questions to refine research direction
-    "Question 1", 
-    "Question 2", 
+    "Question 1",
+    "Question 2",
     "Question 3"
   ]
 }</code></pre>
@@ -103,8 +103,8 @@
   "user_id": "string",          // Required: Unique identifier for the user
   "job_id": "string",           // Required: Unique identifier for the research session
   "answers": [                  // Required: Answers to the follow-up questions
-    "Answer 1", 
-    "Answer 2", 
+    "Answer 1",
+    "Answer 2",
     "Answer 3"
   ]
 }</code></pre>
@@ -150,9 +150,10 @@
         <pre><code>{
   "status": "completed",
   "results": {
-    "prompt": "Combined query with answers",
+    "prompt": "Initial prompt",
+    "questions_and_answers": "Follow-up uestions combined with answers",
     "report": "Markdown report content",
-    "sources": ["URL 1", "URL 2", "..."]
+    "sources": [{"url": "...", "title": "...", "description": "..."}]
   }
 }</code></pre>
     </div>
